@@ -51,6 +51,11 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddHttpClient("ReceitaWS", client =>
+{
+    client.BaseAddress = new Uri("https://www.receitaws.com.br/v1/");
+});
+
 // Injeção de dependência
 builder.Services.AddScoped<IAuthService, AuthService>();
 
