@@ -2,7 +2,12 @@
 {
     public class Company
     {
-        public Guid Id { get; set; }
+        public Company()
+        {
+            Id = Guid.NewGuid();
+        }
+
+        public Guid Id { get; private set; }
         public string? NomeEmpresarial { get; set; }
         public string? NomeFantasia { get; set; }
         public string? Cnpj { get; set; }

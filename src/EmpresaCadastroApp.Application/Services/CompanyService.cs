@@ -1,9 +1,9 @@
 ﻿using EmpresaCadastroApp.Application.DTOs.Company;
 using EmpresaCadastroApp.Application.Interfaces;
 using EmpresaCadastroApp.Application.Models;
+using EmpresaCadastroApp.Application.Utils;
 using EmpresaCadastroApp.Domain.Entities;
-using EmpresaCadastroApp.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
+using EmpresaCadastroApp.Domain.Interfaces;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -11,106 +11,124 @@ namespace EmpresaCadastroApp.Application.Services
 {
     public class CompanyService : ICompanyService
     {
-        private readonly AppDbContext _context;
         private readonly HttpClient _httpClient;
+        private readonly ICompanyRepository _companyRepository;
 
-        public CompanyService(AppDbContext context, HttpClient httpClient)
+        public CompanyService(HttpClient httpClient, ICompanyRepository companyRepository)
         {
-            _context = context;
             _httpClient = httpClient;
+            _companyRepository = companyRepository;
         }
-        public async Task<CompanyResponseDto> CreateCompanyAsync(string cnpj, Guid userId)
+        public async Task<Result<CompanyResponseDto>> CreateCompanyAsync(string cnpj, Guid userId)
         {
-            // Limpar o CNPJ (caso venha com pontuação)
-            cnpj = Regex.Replace(cnpj, "[^0-9]", "");
-
-            // Fazer requisição à API ReceitaWS
-            var response = await _httpClient.GetAsync($"https://www.receitaws.com.br/v1/cnpj/{cnpj}");
-
-            if (!response.IsSuccessStatusCode)
-                throw new Exception("Erro ao consultar CNPJ na ReceitaWS.");
-
-            var json = await response.Content.ReadAsStringAsync();
-            var receitaData = JsonSerializer.Deserialize<ReceitaWsResponse>(json, new JsonSerializerOptions
+            try
             {
-                PropertyNameCaseInsensitive = true
-            });
+                cnpj = Regex.Replace(cnpj, "[^0-9]", "");
 
-            if (receitaData == null || receitaData.Cnpj == null)
-                throw new Exception("CNPJ inválido ou não encontrado.");
+                var response = await _httpClient.GetAsync($"cnpj/{cnpj}");
 
-            // Mapear para entidade Company
-            var company = new Company
-            {
-                Id = Guid.NewGuid(),
-                Cnpj = receitaData.Cnpj,
-                NomeEmpresarial = receitaData.NomeEmpresarial,
-                NomeFantasia = receitaData.NomeFantasia,
-                Situacao = receitaData.Situacao,
-                Abertura = receitaData.Abertura,
-                Tipo = receitaData.Tipo,
-                NaturezaJuridica = receitaData.NaturezaJuridica,
-                AtividadePrincipal = receitaData.AtividadePrincipal?.FirstOrDefault()?.Text,
-                Logradouro = receitaData.Logradouro,
-                Numero = receitaData.Numero,
-                Complemento = receitaData.Complemento,
-                Bairro = receitaData.Bairro,
-                Municipio = receitaData.Municipio,
-                Uf = receitaData.Uf,
-                Cep = receitaData.Cep,
-                UserId = userId
-            };
+                if (!response.IsSuccessStatusCode)
+                    return Result<CompanyResponseDto>.Fail("Erro ao consultar a ReceitaWS");
 
-            // Salvar no banco
-            _context.Companies.Add(company);
-            await _context.SaveChangesAsync();
+                var json = await response.Content.ReadAsStringAsync();
 
-            // Mapear para DTO de resposta
-            return new CompanyResponseDto
-            {
-                Id = company.Id,
-                NomeEmpresarial = company.NomeEmpresarial,
-                NomeFantasia = company.NomeFantasia,
-                Cnpj = company.Cnpj,
-                Situacao = company.Situacao,
-                Abertura = company.Abertura,
-                Tipo = company.Tipo,
-                NaturezaJuridica = company.NaturezaJuridica,
-                AtividadePrincipal = company.AtividadePrincipal,
-                Logradouro = company.Logradouro,
-                Numero = company.Numero,
-                Complemento = company.Complemento,
-                Bairro = company.Bairro,
-                Municipio = company.Municipio,
-                Uf = company.Uf,
-                Cep = company.Cep
-            };
-        }
-
-        public async Task<IEnumerable<CompanyResponseDto>> GetCompaniesByUserAsync(Guid userId)
-        {
-            return await _context.Companies
-                .Where(c => c.UserId == userId)
-                .Select(c => new CompanyResponseDto
+                var receitaData = JsonSerializer.Deserialize<ReceitaWsResponse>(json, new JsonSerializerOptions
                 {
-                    Id = c.Id,
-                    NomeEmpresarial = c.NomeEmpresarial,
-                    NomeFantasia = c.NomeFantasia,
-                    Cnpj = c.Cnpj,
-                    Situacao = c.Situacao,
-                    Abertura = c.Abertura,
-                    Tipo = c.Tipo,
-                    NaturezaJuridica = c.NaturezaJuridica,
-                    AtividadePrincipal = c.AtividadePrincipal,
-                    Logradouro = c.Logradouro,
-                    Numero = c.Numero,
-                    Complemento = c.Complemento,
-                    Bairro = c.Bairro,
-                    Municipio = c.Municipio,
-                    Uf = c.Uf,
-                    Cep = c.Cep
-                })
-                .ToListAsync();
+                    PropertyNameCaseInsensitive = true
+                });
+
+                if (receitaData == null || receitaData.NomeEmpresarial == null)
+                    return Result<CompanyResponseDto>.Fail("Dados da ReceitaWS inválidos.");
+
+                var existing = await _companyRepository.GetByCnpjAndUserIdAsync(receitaData.Cnpj, userId);
+                if (existing != null)
+                    return Result<CompanyResponseDto>.Fail("Esta empresa já está cadastrada por este usuário.");
+
+                var company = new Company
+                {
+                    Cnpj = receitaData.Cnpj,
+                    NomeEmpresarial = receitaData.NomeEmpresarial,
+                    NomeFantasia = receitaData.NomeFantasia,
+                    Situacao = receitaData.Situacao,
+                    Abertura = receitaData.Abertura,
+                    Tipo = receitaData.Tipo,
+                    NaturezaJuridica = receitaData.NaturezaJuridica,
+                    AtividadePrincipal = receitaData.AtividadePrincipal?.FirstOrDefault()?.Text,
+                    Logradouro = receitaData.Logradouro,
+                    Numero = receitaData.Numero,
+                    Complemento = receitaData.Complemento,
+                    Bairro = receitaData.Bairro,
+                    Municipio = receitaData.Municipio,
+                    Uf = receitaData.Uf,
+                    Cep = receitaData.Cep,
+                    UserId = userId
+                };
+
+                await _companyRepository.AddAsync(company);
+
+                var responseDto = new CompanyResponseDto
+                {
+                    Id = company.Id,
+                    Cnpj = company.Cnpj,
+                    NomeEmpresarial = company.NomeEmpresarial,
+                    NomeFantasia = company.NomeFantasia,
+                    Situacao = company.Situacao,
+                    Abertura = company.Abertura,
+                    Tipo = company.Tipo,
+                    NaturezaJuridica = company.NaturezaJuridica,
+                    AtividadePrincipal = company.AtividadePrincipal,
+                    Logradouro = company.Logradouro,
+                    Numero = company.Numero,
+                    Complemento = company.Complemento,
+                    Bairro = company.Bairro,
+                    Municipio = company.Municipio,
+                    Uf = company.Uf,
+                    Cep = company.Cep
+                };
+
+                return Result<CompanyResponseDto>.Ok(responseDto);
+            }
+            catch (Exception ex)
+            {
+                return Result<CompanyResponseDto>.Fail("Erro interno: " + ex.Message);
+            }
+        }
+
+        public async Task<Result<IEnumerable<CompanyResponseDto>>> GetCompaniesByUserAsync(Guid userId)
+        {
+            try
+            {
+                var companies = await _companyRepository.GetByUserIdAsync(userId);
+
+                if (companies == null || !companies.Any())
+                    return Result<IEnumerable<CompanyResponseDto>>.Ok(new List<CompanyResponseDto>());
+
+                var responseDto = companies.Select(company => new CompanyResponseDto
+                {
+                    Id = company.Id,
+                    Cnpj = company.Cnpj,
+                    NomeEmpresarial = company.NomeEmpresarial,
+                    NomeFantasia = company.NomeFantasia,
+                    Situacao = company.Situacao,
+                    Abertura = company.Abertura,
+                    Tipo = company.Tipo,
+                    NaturezaJuridica = company.NaturezaJuridica,
+                    AtividadePrincipal = company.AtividadePrincipal,
+                    Logradouro = company.Logradouro,
+                    Numero = company.Numero,
+                    Complemento = company.Complemento,
+                    Bairro = company.Bairro,
+                    Municipio = company.Municipio,
+                    Uf = company.Uf,
+                    Cep = company.Cep
+                }).ToList();
+
+                return Result<IEnumerable<CompanyResponseDto>>.Ok(responseDto);
+            }
+            catch (Exception ex)
+            {
+                return Result<IEnumerable<CompanyResponseDto>>.Fail("Erro ao buscar empresas: " + ex.Message);
+            }
         }
     }
 }

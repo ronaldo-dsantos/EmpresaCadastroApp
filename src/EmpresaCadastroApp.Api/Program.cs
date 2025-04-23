@@ -1,7 +1,9 @@
 using EmpresaCadastroApp.Application.Interfaces;
 using EmpresaCadastroApp.Application.Services;
 using EmpresaCadastroApp.Domain.Entities;
+using EmpresaCadastroApp.Domain.Interfaces;
 using EmpresaCadastroApp.Infrastructure.Data;
+using EmpresaCadastroApp.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -53,6 +55,7 @@ builder.Services.AddSwaggerGen();
 
 // Injeção de dependência
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
 builder.Services.AddHttpClient<ICompanyService, CompanyService>(client =>
 {
     client.BaseAddress = new Uri("https://www.receitaws.com.br/v1/");
