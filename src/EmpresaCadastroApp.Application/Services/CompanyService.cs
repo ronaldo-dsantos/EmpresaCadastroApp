@@ -4,7 +4,8 @@ using EmpresaCadastroApp.Application.Models;
 using EmpresaCadastroApp.Domain.Entities;
 using EmpresaCadastroApp.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace EmpresaCadastroApp.Application.Services
 {
@@ -20,45 +21,57 @@ namespace EmpresaCadastroApp.Application.Services
         }
         public async Task<CompanyResponseDto> CreateCompanyAsync(string cnpj, Guid userId)
         {
+            // Limpar o CNPJ (caso venha com pontuação)
+            cnpj = Regex.Replace(cnpj, "[^0-9]", "");
+
+            // Fazer requisição à API ReceitaWS
             var response = await _httpClient.GetAsync($"https://www.receitaws.com.br/v1/cnpj/{cnpj}");
 
             if (!response.IsSuccessStatusCode)
-                throw new Exception("Erro ao consultar a ReceitaWS.");
+                throw new Exception("Erro ao consultar CNPJ na ReceitaWS.");
 
-            var data = await response.Content.ReadFromJsonAsync<ReceitaWsResponse>();
+            var json = await response.Content.ReadAsStringAsync();
+            var receitaData = JsonSerializer.Deserialize<ReceitaWsResponse>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
 
-            if (data == null || data.Status?.ToLower() == "error")
+            if (receitaData == null || receitaData.Cnpj == null)
                 throw new Exception("CNPJ inválido ou não encontrado.");
 
+            // Mapear para entidade Company
             var company = new Company
             {
                 Id = Guid.NewGuid(),
-                Cnpj = data.Cnpj,
-                NomeEmpresarial = data.Nome,
-                NomeFantasia = data.Fantasia,
-                Situacao = data.Situacao,
-                Abertura = data.Abertura,
-                Tipo = data.Tipo,
-                NaturezaJuridica = data.NaturezaJuridica,
-                AtividadePrincipal = data.AtividadePrincipal?.FirstOrDefault()?.Text,
-                Logradouro = data.Logradouro,
-                Numero = data.Numero,
-                Complemento = data.Complemento,
-                Bairro = data.Bairro,
-                Municipio = data.Municipio,
-                Uf = data.Uf,
-                Cep = data.Cep,
+                Cnpj = receitaData.Cnpj,
+                NomeEmpresarial = receitaData.NomeEmpresarial,
+                NomeFantasia = receitaData.NomeFantasia,
+                Situacao = receitaData.Situacao,
+                Abertura = receitaData.Abertura,
+                Tipo = receitaData.Tipo,
+                NaturezaJuridica = receitaData.NaturezaJuridica,
+                AtividadePrincipal = receitaData.AtividadePrincipal?.FirstOrDefault()?.Text,
+                Logradouro = receitaData.Logradouro,
+                Numero = receitaData.Numero,
+                Complemento = receitaData.Complemento,
+                Bairro = receitaData.Bairro,
+                Municipio = receitaData.Municipio,
+                Uf = receitaData.Uf,
+                Cep = receitaData.Cep,
                 UserId = userId
             };
 
+            // Salvar no banco
             _context.Companies.Add(company);
             await _context.SaveChangesAsync();
 
+            // Mapear para DTO de resposta
             return new CompanyResponseDto
             {
-                Cnpj = company.Cnpj,
+                Id = company.Id,
                 NomeEmpresarial = company.NomeEmpresarial,
                 NomeFantasia = company.NomeFantasia,
+                Cnpj = company.Cnpj,
                 Situacao = company.Situacao,
                 Abertura = company.Abertura,
                 Tipo = company.Tipo,
@@ -80,9 +93,10 @@ namespace EmpresaCadastroApp.Application.Services
                 .Where(c => c.UserId == userId)
                 .Select(c => new CompanyResponseDto
                 {
-                    Cnpj = c.Cnpj,
+                    Id = c.Id,
                     NomeEmpresarial = c.NomeEmpresarial,
                     NomeFantasia = c.NomeFantasia,
+                    Cnpj = c.Cnpj,
                     Situacao = c.Situacao,
                     Abertura = c.Abertura,
                     Tipo = c.Tipo,

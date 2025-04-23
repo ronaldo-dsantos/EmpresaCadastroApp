@@ -2,6 +2,7 @@
 {
     public class CompanyResponseDto
     {
+        public Guid Id { get; set; }
         public string? Cnpj { get; set; }
         public string? NomeEmpresarial { get; set; }
         public string? NomeFantasia { get; set; }
