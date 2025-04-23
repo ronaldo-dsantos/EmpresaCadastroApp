@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EmpresaCadastroApp.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250423031246_InitialCreate")]
+    [Migration("20250423034954_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -112,7 +112,7 @@ namespace EmpresaCadastroApp.Infrastructure.Migrations
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<string>("Nome")
+                    b.Property<string>("Name")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("NormalizedEmail")

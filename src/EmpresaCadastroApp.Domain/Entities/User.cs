@@ -4,7 +4,7 @@ namespace EmpresaCadastroApp.Domain.Entities
 {
     public class User : IdentityUser<Guid>
     {
-        public string? Nome { get; set; }
+        public string? Name { get; set; }
 
         // Navegação
         public ICollection<Company>? Companies { get; set; }
