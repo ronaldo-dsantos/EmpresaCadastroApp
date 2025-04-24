@@ -1,40 +1,30 @@
-﻿using EmpresaCadastroApp.Application.DTOs.Company;
+﻿using AutoMapper;
+using EmpresaCadastroApp.Application.DTOs.Company;
 using EmpresaCadastroApp.Application.Interfaces;
-using EmpresaCadastroApp.Application.Models;
 using EmpresaCadastroApp.Application.Utils;
 using EmpresaCadastroApp.Domain.Entities;
-using System.Text.Json;
-using System.Text.RegularExpressions;
 
 namespace EmpresaCadastroApp.Application.Services
 {
     public class CompanyService : ICompanyService
     {
-        private readonly HttpClient _httpClient;
+        private readonly IReceitaWsService _receitaWsService;
         private readonly ICompanyRepository _companyRepository;
+        private readonly IMapper _mapper;
 
-        public CompanyService(HttpClient httpClient, ICompanyRepository companyRepository)
+        public CompanyService(IReceitaWsService receitaWsService, 
+                              ICompanyRepository companyRepository, 
+                              IMapper mapper)
         {
-            _httpClient = httpClient;
+            _receitaWsService = receitaWsService;
             _companyRepository = companyRepository;
+            _mapper = mapper;
         }
         public async Task<Result<CompanyResponseDto>> CreateCompanyAsync(string cnpj, Guid userId)
         {
             try
             {
-                cnpj = Regex.Replace(cnpj, "[^0-9]", "");
-
-                var response = await _httpClient.GetAsync($"cnpj/{cnpj}");
-
-                if (!response.IsSuccessStatusCode)
-                    return Result<CompanyResponseDto>.Fail("Erro ao consultar a ReceitaWS");
-
-                var json = await response.Content.ReadAsStringAsync();
-
-                var receitaData = JsonSerializer.Deserialize<ReceitaWsResponse>(json, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
+                var receitaData = await _receitaWsService.ConsultarCnpjAsync(cnpj);
 
                 if (receitaData == null || receitaData.NomeEmpresarial == null)
                     return Result<CompanyResponseDto>.Fail("Dados da ReceitaWS inválidos.");
@@ -43,47 +33,12 @@ namespace EmpresaCadastroApp.Application.Services
                 if (existing != null)
                     return Result<CompanyResponseDto>.Fail("Esta empresa já está cadastrada para este usuário.");
 
-                var company = new Company
-                {
-                    Cnpj = receitaData.Cnpj,
-                    NomeEmpresarial = receitaData.NomeEmpresarial,
-                    NomeFantasia = receitaData.NomeFantasia,
-                    Situacao = receitaData.Situacao,
-                    Abertura = receitaData.Abertura,
-                    Tipo = receitaData.Tipo,
-                    NaturezaJuridica = receitaData.NaturezaJuridica,
-                    AtividadePrincipal = receitaData.AtividadePrincipal?.FirstOrDefault()?.Text,
-                    Logradouro = receitaData.Logradouro,
-                    Numero = receitaData.Numero,
-                    Complemento = receitaData.Complemento,
-                    Bairro = receitaData.Bairro,
-                    Municipio = receitaData.Municipio,
-                    Uf = receitaData.Uf,
-                    Cep = receitaData.Cep,
-                    UserId = userId
-                };
+                var company = _mapper.Map<Company>(receitaData);
+                company.UserId = userId;
 
                 await _companyRepository.AddAsync(company);
 
-                var responseDto = new CompanyResponseDto
-                {
-                    Id = company.Id,
-                    Cnpj = company.Cnpj,
-                    NomeEmpresarial = company.NomeEmpresarial,
-                    NomeFantasia = company.NomeFantasia,
-                    Situacao = company.Situacao,
-                    Abertura = company.Abertura,
-                    Tipo = company.Tipo,
-                    NaturezaJuridica = company.NaturezaJuridica,
-                    AtividadePrincipal = company.AtividadePrincipal,
-                    Logradouro = company.Logradouro,
-                    Numero = company.Numero,
-                    Complemento = company.Complemento,
-                    Bairro = company.Bairro,
-                    Municipio = company.Municipio,
-                    Uf = company.Uf,
-                    Cep = company.Cep
-                };
+                var responseDto = _mapper.Map<CompanyResponseDto>(company);
 
                 return Result<CompanyResponseDto>.Ok(responseDto);
             }
@@ -102,25 +57,7 @@ namespace EmpresaCadastroApp.Application.Services
                 if (companies == null || !companies.Any())
                     return Result<IEnumerable<CompanyResponseDto>>.Ok(new List<CompanyResponseDto>());
 
-                var responseDto = companies.Select(company => new CompanyResponseDto
-                {
-                    Id = company.Id,
-                    Cnpj = company.Cnpj,
-                    NomeEmpresarial = company.NomeEmpresarial,
-                    NomeFantasia = company.NomeFantasia,
-                    Situacao = company.Situacao,
-                    Abertura = company.Abertura,
-                    Tipo = company.Tipo,
-                    NaturezaJuridica = company.NaturezaJuridica,
-                    AtividadePrincipal = company.AtividadePrincipal,
-                    Logradouro = company.Logradouro,
-                    Numero = company.Numero,
-                    Complemento = company.Complemento,
-                    Bairro = company.Bairro,
-                    Municipio = company.Municipio,
-                    Uf = company.Uf,
-                    Cep = company.Cep
-                }).ToList();
+                var responseDto = _mapper.Map<IEnumerable<CompanyResponseDto>>(companies);
 
                 return Result<IEnumerable<CompanyResponseDto>>.Ok(responseDto);
             }

@@ -9,7 +9,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace EmpresaCadastroApp.Application.Services
+namespace EmpresaCadastroApp.Infrastructure.Services
 {
     public class AuthService : IAuthService
     {
@@ -24,6 +24,9 @@ namespace EmpresaCadastroApp.Application.Services
 
         public async Task<Result<UserResponseDto>> RegisterAsync(UserRegisterDto dto)
         {
+            if (await _userManager.FindByEmailAsync(dto.Email) is not null)
+                return Result<UserResponseDto>.Fail("E-mail já cadastrado.");
+
             var user = new User
             {
                 Name = dto.Name,
@@ -34,7 +37,7 @@ namespace EmpresaCadastroApp.Application.Services
             var result = await _userManager.CreateAsync(user, dto.Password);
 
             if (!result.Succeeded)
-                return Result<UserResponseDto>.Fail(string.Join(", ", result.Errors.Select(e => e.Description)));
+                return Result<UserResponseDto>.Fail(result.Errors.Select(e => e.Description).ToArray());
 
             var response = new UserResponseDto
             {
@@ -51,7 +54,7 @@ namespace EmpresaCadastroApp.Application.Services
         {
             var user = await _userManager.FindByEmailAsync(dto.Email);
             if (user == null || !await _userManager.CheckPasswordAsync(user, dto.Password))
-                return Result<UserResponseDto>.Fail("Credenciais inválidas.");
+                return Result<UserResponseDto>.Fail("E-mail ou senha inválidos.");
 
             var response = new UserResponseDto
             {
