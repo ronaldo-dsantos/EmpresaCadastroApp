@@ -1,7 +1,10 @@
-﻿using EmpresaCadastroApp.Application.DTOs.User;
+﻿using AutoMapper;
+using EmpresaCadastroApp.Application.DTOs.User;
 using EmpresaCadastroApp.Application.Interfaces;
 using EmpresaCadastroApp.Application.Utils;
+using EmpresaCadastroApp.Application.Validators;
 using EmpresaCadastroApp.Domain.Entities;
+using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -15,54 +18,59 @@ namespace EmpresaCadastroApp.Infrastructure.Services
     {
         private readonly UserManager<User> _userManager;
         private readonly IConfiguration _configuration;
+        private readonly IValidator<UserRegisterDto> _registerValidator;
+        private readonly IValidator<UserLoginDto> _loginValidator;
+        private readonly IMapper _mapper;
 
-        public AuthService(UserManager<User> userManager, IConfiguration configuration)
+        public AuthService(UserManager<User> userManager,
+                           IConfiguration configuration,
+                           IValidator<UserRegisterDto> registerValidator,
+                           IValidator<UserLoginDto> loginValidator,
+                           IMapper mapper)
         {
             _userManager = userManager;
             _configuration = configuration;
+            _registerValidator = registerValidator;
+            _loginValidator = loginValidator;
+            _mapper = mapper;
         }
 
         public async Task<Result<UserResponseDto>> RegisterAsync(UserRegisterDto dto)
         {
+            var validationResult = await _registerValidator.ValidateAsync(dto);
+            if (!validationResult.IsValid)            
+                return Result<UserResponseDto>.Fail(validationResult.Errors.Select(e => e.ErrorMessage).ToArray());
+            
+
             if (await _userManager.FindByEmailAsync(dto.Email) is not null)
                 return Result<UserResponseDto>.Fail("E-mail já cadastrado.");
 
-            var user = new User
-            {
-                Name = dto.Name,
-                Email = dto.Email,
-                UserName = dto.Email
-            };
+            var user = _mapper.Map<User>(dto);
 
             var result = await _userManager.CreateAsync(user, dto.Password);
 
             if (!result.Succeeded)
                 return Result<UserResponseDto>.Fail(result.Errors.Select(e => e.Description).ToArray());
 
-            var response = new UserResponseDto
-            {
-                Id = user.Id,
-                Name = user.Name,
-                Email = user.Email,
-                Token = GenerateJwtToken(user)
-            };
+            var response = _mapper.Map<UserResponseDto>(user);
+            response.Token = GenerateJwtToken(user);
 
             return Result<UserResponseDto>.Ok(response);
         }
 
         public async Task<Result<UserResponseDto>> LoginAsync(UserLoginDto dto)
         {
+            var validationResult = await _loginValidator.ValidateAsync(dto);
+            if (!validationResult.IsValid)
+                return Result<UserResponseDto>.Fail(validationResult.Errors.Select(e => e.ErrorMessage).ToArray());
+
+
             var user = await _userManager.FindByEmailAsync(dto.Email);
             if (user == null || !await _userManager.CheckPasswordAsync(user, dto.Password))
                 return Result<UserResponseDto>.Fail("E-mail ou senha inválidos.");
 
-            var response = new UserResponseDto
-            {
-                Id = user.Id,
-                Name = user.Name,
-                Email = user.Email,
-                Token = GenerateJwtToken(user)
-            };
+            var response = _mapper.Map<UserResponseDto>(user);
+            response.Token = GenerateJwtToken(user);
 
             return Result<UserResponseDto>.Ok(response);
         }

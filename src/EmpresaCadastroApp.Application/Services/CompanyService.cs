@@ -3,6 +3,7 @@ using EmpresaCadastroApp.Application.DTOs.Company;
 using EmpresaCadastroApp.Application.Interfaces;
 using EmpresaCadastroApp.Application.Utils;
 using EmpresaCadastroApp.Domain.Entities;
+using EmpresaCadastroApp.Domain.Interfaces;
 
 namespace EmpresaCadastroApp.Application.Services
 {
@@ -31,7 +32,7 @@ namespace EmpresaCadastroApp.Application.Services
 
                 var existing = await _companyRepository.GetByCnpjAndUserIdAsync(receitaData.Cnpj, userId);
                 if (existing != null)
-                    return Result<CompanyResponseDto>.Fail("Esta empresa já está cadastrada para este usuário.");
+                    return Result<CompanyResponseDto>.Fail("Esta empresa já está cadastrada por este usuário.");
 
                 var company = _mapper.Map<Company>(receitaData);
                 company.UserId = userId;
