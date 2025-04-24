@@ -1,7 +1,6 @@
 using EmpresaCadastroApp.Application.Interfaces;
 using EmpresaCadastroApp.Application.Services;
 using EmpresaCadastroApp.Domain.Entities;
-using EmpresaCadastroApp.Domain.Interfaces;
 using EmpresaCadastroApp.Infrastructure.Data;
 using EmpresaCadastroApp.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;

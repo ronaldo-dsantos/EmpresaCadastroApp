@@ -9,7 +9,7 @@ namespace EmpresaCadastroApp.Api.Controllers
     [Authorize]
     [ApiController]
     [Route("api/empresas")]
-    public class CompanyController : ControllerBase
+    public class CompanyController : BaseController
     {
         private readonly ICompanyService _companyService;
 
@@ -19,7 +19,7 @@ namespace EmpresaCadastroApp.Api.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CompanyCreateDto dto)
+        public async Task<IActionResult> Create(CompanyCreateDto dto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -28,7 +28,7 @@ namespace EmpresaCadastroApp.Api.Controllers
 
             var result = await _companyService.CreateCompanyAsync(dto.Cnpj, Guid.Parse(userId));
 
-            return Ok(result);
+            return FromResult(result);
         }
 
         [HttpGet]
@@ -39,8 +39,9 @@ namespace EmpresaCadastroApp.Api.Controllers
             if (userId == null)
                 return Unauthorized();
 
-            var companies = await _companyService.GetCompaniesByUserAsync(Guid.Parse(userId));
-            return Ok(companies);
+            var result = await _companyService.GetCompaniesByUserAsync(Guid.Parse(userId));
+
+            return FromResult(result);
         }
     }
 }

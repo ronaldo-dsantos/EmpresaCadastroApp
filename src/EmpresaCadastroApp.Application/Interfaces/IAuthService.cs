@@ -1,10 +1,11 @@
 ﻿using EmpresaCadastroApp.Application.DTOs.User;
+using EmpresaCadastroApp.Application.Utils;
 
 namespace EmpresaCadastroApp.Application.Interfaces
 {
     public interface IAuthService
     {
-        Task<UserResponseDto> RegisterAsync(UserRegisterDto dto);
-        Task<UserResponseDto> LoginAsync(UserLoginDto dto);
+        Task<Result<UserResponseDto>> RegisterAsync(UserRegisterDto dto);
+        Task<Result<UserResponseDto>> LoginAsync(UserLoginDto dto);
     }
 }

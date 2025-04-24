@@ -26,6 +26,7 @@
   <ItemGroup>
     <ProjectReference Include="..\EmpresaCadastroApp.Application\EmpresaCadastroApp.Application.csproj" />
     <ProjectReference Include="..\EmpresaCadastroApp.Domain\EmpresaCadastroApp.Domain.csproj" />
+    <ProjectReference Include="..\EmpresaCadastroApp.Infrastructure\EmpresaCadastroApp.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

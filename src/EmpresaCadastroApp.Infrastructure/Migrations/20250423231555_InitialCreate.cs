@@ -162,9 +162,9 @@ namespace EmpresaCadastroApp.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Cnpj = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     NomeEmpresarial = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     NomeFantasia = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Cnpj = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Situacao = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Abertura = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Tipo = table.Column<string>(type: "nvarchar(max)", nullable: true),

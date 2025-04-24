@@ -1,6 +1,6 @@
 ﻿using EmpresaCadastroApp.Domain.Entities;
-using EmpresaCadastroApp.Domain.Interfaces;
 using EmpresaCadastroApp.Infrastructure.Data;
+using EmpresaCadastroApp.Application.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace EmpresaCadastroApp.Infrastructure.Repositories

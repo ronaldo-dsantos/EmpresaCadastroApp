@@ -1,5 +1,6 @@
 ﻿using EmpresaCadastroApp.Application.DTOs.User;
 using EmpresaCadastroApp.Application.Interfaces;
+using EmpresaCadastroApp.Application.Utils;
 using EmpresaCadastroApp.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
@@ -21,7 +22,7 @@ namespace EmpresaCadastroApp.Application.Services
             _configuration = configuration;
         }
 
-        public async Task<UserResponseDto> RegisterAsync(UserRegisterDto dto)
+        public async Task<Result<UserResponseDto>> RegisterAsync(UserRegisterDto dto)
         {
             var user = new User
             {
@@ -33,30 +34,34 @@ namespace EmpresaCadastroApp.Application.Services
             var result = await _userManager.CreateAsync(user, dto.Password);
 
             if (!result.Succeeded)
-                throw new ApplicationException(string.Join(", ", result.Errors.Select(e => e.Description)));
+                return Result<UserResponseDto>.Fail(string.Join(", ", result.Errors.Select(e => e.Description)));
 
-            return new UserResponseDto
+            var response = new UserResponseDto
             {
                 Id = user.Id,
                 Name = user.Name,
                 Email = user.Email,
                 Token = GenerateJwtToken(user)
             };
+
+            return Result<UserResponseDto>.Ok(response);
         }
 
-        public async Task<UserResponseDto> LoginAsync(UserLoginDto dto)
+        public async Task<Result<UserResponseDto>> LoginAsync(UserLoginDto dto)
         {
             var user = await _userManager.FindByEmailAsync(dto.Email);
             if (user == null || !await _userManager.CheckPasswordAsync(user, dto.Password))
-                throw new ApplicationException("Credenciais inválidas.");
+                return Result<UserResponseDto>.Fail("Credenciais inválidas.");
 
-            return new UserResponseDto
+            var response = new UserResponseDto
             {
                 Id = user.Id,
                 Name = user.Name,
                 Email = user.Email,
                 Token = GenerateJwtToken(user)
             };
+
+            return Result<UserResponseDto>.Ok(response);
         }
 
         private string GenerateJwtToken(User user)

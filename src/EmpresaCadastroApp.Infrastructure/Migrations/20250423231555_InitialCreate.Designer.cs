@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EmpresaCadastroApp.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250423034954_InitialCreate")]
+    [Migration("20250423231555_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />

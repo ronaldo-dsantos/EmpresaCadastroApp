@@ -1,6 +1,6 @@
 ﻿using EmpresaCadastroApp.Domain.Entities;
 
-namespace EmpresaCadastroApp.Domain.Interfaces
+namespace EmpresaCadastroApp.Application.Interfaces
 {
     public interface ICompanyRepository
     {
