@@ -10,7 +10,7 @@ API desenvolvida como parte de um teste técnico com o objetivo de permitir o ca
 - ✅ Arquitetura em camadas (Domain, Application, Infrastructure, Api)
 
 ## 🛠️ Tecnologias Utilizadas
-- **ASP.NET Core 6**
+- **ASP.NET Core**
 - **Entity Framework Core**
 - **ASP.NET Identity**
 - **AutoMapper**
