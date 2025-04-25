@@ -19,7 +19,8 @@ API desenvolvida como parte de um teste técnico com o objetivo de permitir o ca
 - **Swagger (documentação da API)**
 
 ## 🔐 Autenticação
-A autenticação é feita via **JWT Bearer Token**. Após realizar o login, utilize o token retornado no header `Authorization` como `Bearer {seu_token}`.
+A autenticação é feita via **JWT Bearer Token**. 
+Após realizar o login, utilize o token retornado no header `Authorization` como `Bearer {seu_token}`.
 
 ## 🔄 Endpoints Principais
 
