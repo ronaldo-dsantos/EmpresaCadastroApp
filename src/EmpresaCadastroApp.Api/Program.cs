@@ -1,4 +1,5 @@
 using EmpresaCadastroApp.Api.Configuration;
+using EmpresaCadastroApp.Api.Middleware;
 using EmpresaCadastroApp.Application.Mappings;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,6 +23,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseMiddleware<ExceptionMiddleware>();
 
 app.UseAuthentication();
 
