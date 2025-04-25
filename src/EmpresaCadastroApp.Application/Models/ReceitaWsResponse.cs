@@ -4,6 +4,9 @@ namespace EmpresaCadastroApp.Application.Models
 {
     public class ReceitaWsResponse
     {
+        public string? Status { get; set; }
+        public string? Message { get; set; }
+
         [JsonPropertyName("nome")]
         public string? NomeEmpresarial { get; set; }
 

@@ -30,20 +30,18 @@ namespace EmpresaCadastroApp.Application.Services
             try
             {
                 var validationResult = await _validator.ValidateAsync(dto);
-
                 if (!validationResult.IsValid)                
-                    return Result<CompanyResponseDto>.Fail(validationResult.Errors.Select(e => e.ErrorMessage).ToArray());                
+                    return Result<CompanyResponseDto>.Fail(validationResult.Errors.Select(e => e.ErrorMessage).ToArray());
 
-                var receitaData = await _receitaWsService.ConsultarCnpjAsync(dto.Cnpj);
+                var receitaResult = await _receitaWsService.ConsultarCnpjAsync(dto.Cnpj);
+                if (!receitaResult.Success || receitaResult.Data == null || string.IsNullOrWhiteSpace(receitaResult.Data.NomeEmpresarial))
+                    return Result<CompanyResponseDto>.Fail(receitaResult.Errors.FirstOrDefault() ?? "Dados inválidos.");
 
-                if (receitaData == null || receitaData.NomeEmpresarial == null)
-                    return Result<CompanyResponseDto>.Fail("Dados da ReceitaWS inválidos.");
-
-                var existing = await _companyRepository.GetByCnpjAndUserIdAsync(receitaData.Cnpj, userId);
+                var existing = await _companyRepository.GetByCnpjAndUserIdAsync(receitaResult.Data.Cnpj, userId);
                 if (existing != null)
                     return Result<CompanyResponseDto>.Fail("Esta empresa já está cadastrada por este usuário.");
 
-                var company = _mapper.Map<Company>(receitaData);
+                var company = _mapper.Map<Company>(receitaResult.Data);
                 company.UserId = userId;
 
                 await _companyRepository.AddAsync(company);
@@ -54,7 +52,7 @@ namespace EmpresaCadastroApp.Application.Services
             }
             catch (Exception ex)
             {
-                return Result<CompanyResponseDto>.Fail("Erro interno: " + ex.Message);
+                return Result<CompanyResponseDto>.Fail("Erro interno ao cadastrar empresa.");
             }
         }
 
@@ -73,7 +71,7 @@ namespace EmpresaCadastroApp.Application.Services
             }
             catch (Exception ex)
             {
-                return Result<IEnumerable<CompanyResponseDto>>.Fail("Erro ao buscar empresas: " + ex.Message);
+                return Result<IEnumerable<CompanyResponseDto>>.Fail("Erro ao buscar empresas.");
             }
         }
     }

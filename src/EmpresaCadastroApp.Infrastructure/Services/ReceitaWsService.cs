@@ -1,5 +1,6 @@
 ﻿using EmpresaCadastroApp.Application.Interfaces;
 using EmpresaCadastroApp.Application.Models;
+using EmpresaCadastroApp.Application.Utils;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -14,21 +15,42 @@ namespace EmpresaCadastroApp.Infrastructure.Services
             _httpClient = httpClient;
         }
 
-        public async Task<ReceitaWsResponse?> ConsultarCnpjAsync(string cnpj)
+        public async Task<Result<ReceitaWsResponse>> ConsultarCnpjAsync(string cnpj)
         {
-            cnpj = Regex.Replace(cnpj, "[^0-9]", "");
-
-            var response = await _httpClient.GetAsync($"cnpj/{cnpj}");
-
-            if (!response.IsSuccessStatusCode)
-                return null;
-
-            var json = await response.Content.ReadAsStringAsync();
-
-            return JsonSerializer.Deserialize<ReceitaWsResponse>(json, new JsonSerializerOptions
+            try
             {
-                PropertyNameCaseInsensitive = true
-            });
+                cnpj = Regex.Replace(cnpj, "[^0-9]", "");
+
+                var response = await _httpClient.GetAsync($"cnpj/{cnpj}");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    return Result<ReceitaWsResponse>.Fail("Erro ao consultar o CNPJ. Tente novamente mais tarde.");
+                }
+
+                var json = await response.Content.ReadAsStringAsync();
+
+                var data = JsonSerializer.Deserialize<ReceitaWsResponse>(json, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                if (data == null)
+                    return Result<ReceitaWsResponse>.Fail("Resposta inválida da ReceitaWS.");
+
+                if (!string.IsNullOrEmpty(data.Status) && data.Status.Equals("ERROR", StringComparison.OrdinalIgnoreCase))
+                    return Result<ReceitaWsResponse>.Fail(data.Message ?? "CNPJ inválido ou não encontrado.");
+
+                return Result<ReceitaWsResponse>.Ok(data);
+            }
+            catch (HttpRequestException)
+            {
+                return Result<ReceitaWsResponse>.Fail("Falha de comunicação com a ReceitaWS.");
+            }
+            catch (Exception)
+            {
+                return Result<ReceitaWsResponse>.Fail("Erro inesperado ao consultar a ReceitaWS.");
+            }
         }
     }
 }
