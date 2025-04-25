@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using EmpresaCadastroApp.Infrastructure.Configurations;
 
 namespace EmpresaCadastroApp.Infrastructure.Data
 {
@@ -15,11 +16,8 @@ namespace EmpresaCadastroApp.Infrastructure.Data
         {
             base.OnModelCreating(builder);
 
-            // Relacionamento User -> Companies
-            builder.Entity<User>()
-                   .HasMany(u => u.Companies)
-                   .WithOne(c => c.User)
-                   .HasForeignKey(c => c.UserId);
+            builder.ApplyConfiguration(new UserConfiguration());
+            builder.ApplyConfiguration(new CompanyConfiguration());
         }
     }
 }
