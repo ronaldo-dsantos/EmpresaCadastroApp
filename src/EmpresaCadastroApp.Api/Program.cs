@@ -1,3 +1,4 @@
+using EmpresaCadastroApp.Application.DTOs.Company;
 using EmpresaCadastroApp.Application.DTOs.User;
 using EmpresaCadastroApp.Application.Interfaces;
 using EmpresaCadastroApp.Application.Mappings;
@@ -67,6 +68,7 @@ builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
 builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IValidator<UserRegisterDto>, UserRegisterDtoValidator>();
 builder.Services.AddScoped<IValidator<UserLoginDto>, UserLoginDtoValidator>();
+builder.Services.AddScoped<IValidator<CompanyCreateDto>, CompanyCreateDtoValidator>();
 builder.Services.AddHttpClient<IReceitaWsService, ReceitaWsService>(client =>
 {
     client.BaseAddress = new Uri("https://www.receitaws.com.br/v1/");

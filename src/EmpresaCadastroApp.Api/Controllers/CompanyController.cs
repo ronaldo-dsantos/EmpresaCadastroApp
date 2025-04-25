@@ -26,7 +26,7 @@ namespace EmpresaCadastroApp.Api.Controllers
             if (userId == null)
                 return Unauthorized();
 
-            var result = await _companyService.CreateCompanyAsync(dto.Cnpj, Guid.Parse(userId));
+            var result = await _companyService.CreateCompanyAsync(dto, Guid.Parse(userId));
 
             return FromResult(result);
         }

@@ -4,6 +4,7 @@ using EmpresaCadastroApp.Application.Interfaces;
 using EmpresaCadastroApp.Application.Utils;
 using EmpresaCadastroApp.Domain.Entities;
 using EmpresaCadastroApp.Domain.Interfaces;
+using FluentValidation;
 
 namespace EmpresaCadastroApp.Application.Services
 {
@@ -12,20 +13,28 @@ namespace EmpresaCadastroApp.Application.Services
         private readonly IReceitaWsService _receitaWsService;
         private readonly ICompanyRepository _companyRepository;
         private readonly IMapper _mapper;
+        private readonly IValidator<CompanyCreateDto> _validator;
 
         public CompanyService(IReceitaWsService receitaWsService, 
                               ICompanyRepository companyRepository, 
-                              IMapper mapper)
+                              IMapper mapper,
+                              IValidator<CompanyCreateDto> validator)
         {
             _receitaWsService = receitaWsService;
             _companyRepository = companyRepository;
             _mapper = mapper;
+            _validator = validator;
         }
-        public async Task<Result<CompanyResponseDto>> CreateCompanyAsync(string cnpj, Guid userId)
+        public async Task<Result<CompanyResponseDto>> CreateCompanyAsync(CompanyCreateDto dto, Guid userId)
         {
             try
             {
-                var receitaData = await _receitaWsService.ConsultarCnpjAsync(cnpj);
+                var validationResult = await _validator.ValidateAsync(dto);
+
+                if (!validationResult.IsValid)                
+                    return Result<CompanyResponseDto>.Fail(validationResult.Errors.Select(e => e.ErrorMessage).ToArray());                
+
+                var receitaData = await _receitaWsService.ConsultarCnpjAsync(dto.Cnpj);
 
                 if (receitaData == null || receitaData.NomeEmpresarial == null)
                     return Result<CompanyResponseDto>.Fail("Dados da ReceitaWS inválidos.");
