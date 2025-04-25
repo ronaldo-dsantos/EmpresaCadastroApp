@@ -37,22 +37,25 @@ namespace EmpresaCadastroApp.Infrastructure.Services
 
         public async Task<Result<UserResponseDto>> RegisterAsync(UserRegisterDto dto)
         {
+            // Valida os dados de entrada do usuário
             var validationResult = await _registerValidator.ValidateAsync(dto);
             if (!validationResult.IsValid)            
                 return Result<UserResponseDto>.Fail(validationResult.Errors.Select(e => e.ErrorMessage).ToArray());
-            
 
+            // Verifica se o e-mail já está cadastrado
             if (await _userManager.FindByEmailAsync(dto.Email) is not null)
                 return Result<UserResponseDto>.Fail("E-mail já cadastrado.");
 
             var user = _mapper.Map<User>(dto);
 
+            // cria o usuário
             var result = await _userManager.CreateAsync(user, dto.Password);
-
             if (!result.Succeeded)
                 return Result<UserResponseDto>.Fail(result.Errors.Select(e => e.Description).ToArray());
 
             var response = _mapper.Map<UserResponseDto>(user);
+
+            // Gera o token JWT
             response.Token = GenerateJwtToken(user);
 
             return Result<UserResponseDto>.Ok(response);
@@ -60,16 +63,19 @@ namespace EmpresaCadastroApp.Infrastructure.Services
 
         public async Task<Result<UserResponseDto>> LoginAsync(UserLoginDto dto)
         {
+            // Valida os dados de entrada do usuário
             var validationResult = await _loginValidator.ValidateAsync(dto);
             if (!validationResult.IsValid)
                 return Result<UserResponseDto>.Fail(validationResult.Errors.Select(e => e.ErrorMessage).ToArray());
 
-
+            // Verifica se o usuário e senha estão corretos
             var user = await _userManager.FindByEmailAsync(dto.Email);
             if (user == null || !await _userManager.CheckPasswordAsync(user, dto.Password))
                 return Result<UserResponseDto>.Fail("E-mail ou senha inválidos.");
 
             var response = _mapper.Map<UserResponseDto>(user);
+
+            // Gera o token JWT
             response.Token = GenerateJwtToken(user);
 
             return Result<UserResponseDto>.Ok(response);

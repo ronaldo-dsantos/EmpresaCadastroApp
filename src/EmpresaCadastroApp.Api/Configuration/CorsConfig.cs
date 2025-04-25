@@ -7,10 +7,9 @@
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("Development", builder => 
-                                    builder
-                                        .AllowAnyOrigin() 
-                                        .AllowAnyMethod() 
-                                        .AllowAnyHeader()); 
+                                    builder.AllowAnyOrigin() 
+                                           .AllowAnyMethod() 
+                                           .AllowAnyHeader()); 
             });
 
             return builder;

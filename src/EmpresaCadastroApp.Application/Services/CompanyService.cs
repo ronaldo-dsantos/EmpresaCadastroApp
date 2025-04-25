@@ -29,14 +29,17 @@ namespace EmpresaCadastroApp.Application.Services
         {
             try
             {
+                // Valida os dados de entrada
                 var validationResult = await _validator.ValidateAsync(dto);
                 if (!validationResult.IsValid)                
                     return Result<CompanyResponseDto>.Fail(validationResult.Errors.Select(e => e.ErrorMessage).ToArray());
 
+                // Consulta o CNPJ informado na API externa ReceitaWS
                 var receitaResult = await _receitaWsService.ConsultarCnpjAsync(dto.Cnpj);
                 if (!receitaResult.Success || receitaResult.Data == null || string.IsNullOrWhiteSpace(receitaResult.Data.NomeEmpresarial))
                     return Result<CompanyResponseDto>.Fail(receitaResult.Errors.FirstOrDefault() ?? "Dados inválidos.");
 
+                // Verifica se o CNPJ já está cadastrada por este usuário
                 var existing = await _companyRepository.GetByCnpjAndUserIdAsync(receitaResult.Data.Cnpj, userId);
                 if (existing != null)
                     return Result<CompanyResponseDto>.Fail("Esta empresa já está cadastrada por este usuário.");
